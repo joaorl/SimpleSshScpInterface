@@ -17,8 +17,10 @@ class SshClient
 {
 public:
     SshClient() = delete;
-    SshClient(string ip, string user, string password): _ip(ip), _user(user),
-                                                        _password(password){};
+    SshClient(string ip, string user, string password):
+              _ip(ip), _user(user), _password(password){};
+    SshClient(string ip, string user, string password, bool autoverifyhost):
+              _ip(ip), _user(user), _password(password), _autoverifyhost(autoverifyhost){};
     int Connect();
     int Execute(string command, bool verbosity);
     int Execute(string command, string* received);
@@ -44,6 +46,7 @@ private:
                               string destination);
 private:
     string _ip, _user, _password;
+    bool _autoverifyhost{true};
     ssh_session _session;
     ssh_channel _channel;
 };

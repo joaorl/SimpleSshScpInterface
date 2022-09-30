@@ -14,7 +14,6 @@ static void error(ssh_session session)
     printf("Authentication failed: %s\n", ssh_get_error(session));
 }
 
-// for string delimiter
 vector<string> split(const string& str, const string& delimiter)
 {
     vector<string> substrings;
@@ -30,39 +29,6 @@ vector<string> split(const string& str, const string& delimiter)
     substrings.push_back(str.substr(prev));
 
     return substrings;
-}
-
-int _CopyFilesTree(string source, string destination)
-{
-    if (fs::is_directory(source) == false)
-    {
-        cout << "File = " << source << endl;
-
-        fs::copy_file(source, destination);
-
-        return 0;
-    }
-
-    cout << "Folder = " << source << endl;
-    cout << "Destination = " << destination << endl;
-    fs::current_path(source);
-    fs::create_directories(destination);
-
-    try
-    {
-        for (fs::directory_iterator s("."), end; s != end; ++s)
-        {
-            _CopyFilesTree(s->path().filename(), destination + "/" + s->path().filename().c_str());
-        }
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << e.what() << '\n';
-    }
-
-    fs::current_path("../");
-
-    return 0;
 }
 
 int SshClient::Connect()
@@ -110,8 +76,7 @@ int SshClient::_CreateRemoteFilesTree(ssh_session& session, ssh_scp& scp,
 
     if (fs::is_directory(source) == false)
     {
-        cout << "File = " << source << endl;
-
+        printf("INFO - Uploading file %s, permissions 0\n",source.c_str());
         ifstream input(source, std::ios::binary);
         constexpr size_t bufferSize = 1024 * 1024;
         unique_ptr<char[]> buffer(new char[bufferSize]);
@@ -126,8 +91,8 @@ int SshClient::_CreateRemoteFilesTree(ssh_session& session, ssh_scp& scp,
         return 0;
     }
 
-    cout << "Folder = " << source << endl;
-    cout << "Destination = " << destination << endl;
+    printf("INFO - Uploading directory %s, permissions 0\n", source.c_str());
+    // cout << "Destination = " << destination << endl;
     fs::current_path(source);
 
     res = _CreateRemoteFolder(session, scp, destination);
@@ -232,7 +197,7 @@ int SshClient::_CreateLocalFilesTree(ssh_session& session, ssh_scp& scp,
     do
     {
         res = ssh_scp_pull_request(scp);
-        cout << "State = " << res << endl;
+        // cout << "State = " << res << endl;
         switch(res)
         {
         case SSH_SCP_REQUEST_NEWFILE:
@@ -240,7 +205,7 @@ int SshClient::_CreateLocalFilesTree(ssh_session& session, ssh_scp& scp,
             size = ssh_scp_request_get_size(scp);
             filename = strdup(ssh_scp_request_get_filename(scp));
             mode = ssh_scp_request_get_permissions(scp);
-            printf("Receiving file %s, size %d, permissions 0%o\n",
+            printf("INFO - Receiving file %s, size %d, permissions 0%o\n",
                    filename, size, mode);
 
             ofstream localfile;
@@ -283,7 +248,7 @@ int SshClient::_CreateLocalFilesTree(ssh_session& session, ssh_scp& scp,
             filename = strdup(ssh_scp_request_get_filename(scp));
             mode = ssh_scp_request_get_permissions(scp);
 
-            printf("Downloading directory %s, perms 0%o\n",filename, mode);
+            printf("INFO - Downloading directory %s, permissions 0%o\n",filename, mode);
 
             fs::create_directory(filename);
             fs::current_path(filename);
@@ -298,7 +263,7 @@ int SshClient::_CreateLocalFilesTree(ssh_session& session, ssh_scp& scp,
             break;
 
         case SSH_SCP_REQUEST_ENDDIR:
-            printf("End of directory\n");
+            // printf("End of directory\n");
             fs::current_path("..");
 
             break;
@@ -733,7 +698,13 @@ int SshClient::_VerifyKnownhost(ssh_session& session)
         /* fallback to SSH_SERVER_NOT_KNOWN behavior */
     case SSH_SERVER_NOT_KNOWN:
     {
-        printf("The server is unknown. Do you trust the host key ?\n");
+        if (_autoverifyhost)
+        {
+            break;
+        }
+
+
+        printf("The server is unknown. Do you trust the host key ? (yes|no)\n");
         if (fgets(buf, sizeof(buf), stdin) == NULL)
         {
             return -1;
@@ -744,7 +715,7 @@ int SshClient::_VerifyKnownhost(ssh_session& session)
             return -1;
         }
 
-        printf("This new key will be written on disk for further usage. do you agree ?\n");
+        printf("This new key will be written on disk for further usage. do you agree ? (yes|no)\n");
         if (fgets(buf, sizeof(buf), stdin) == NULL)
         {
             return -1;
