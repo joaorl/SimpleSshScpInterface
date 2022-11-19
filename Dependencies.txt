@@ -1,5 +1,0 @@
-
-
-# Dependencies
-apt-get update -y
-apt-get install -y libssh-dev

@@ -7,6 +7,7 @@ set(application_name "cppsshdemo")
 
 add_executable (${application_name} main.cpp)
 
+add_subdirectory (ThirdParty/json-develop CppJsonLib)
 add_subdirectory (Libs/CppSsh/ CppSshLib)
 
 target_link_libraries (${application_name} LINK_PUBLIC
