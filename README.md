@@ -14,6 +14,14 @@ This library depends on the following libraries:
 * `libssh`: a cross-platform C library implementing the SSHv2 protocol
 * `std`: the C++ standard library
 
+## Build
+To build follow the instructions below:
+```
+mkdir build
+cd build
+cmake ..
+```
+
 # Usage
 To use this library, you need to include the SshClient.h header file and create an instance of the SshClient class with the IP address, user name, and password of the remote host. Then, you can call the various methods of the class to execute commands and transfer files.
 ```
